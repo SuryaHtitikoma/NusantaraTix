@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NusantaraTix OLTP — Distributed Ticketing System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#121212',
+            card: '#232223',
+            border: '#2D3436',
+            primary: '#1F79AE',
+            gold: '#D4AF37',
+            emerald: '#10B981',
+            crimson: '#EF4444',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: #121212; color: #E5E7EB; font-family: 'Segoe UI', system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1a1a1a; }
+    ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    .tab-btn { transition: all 0.2s; }
+    .tab-btn.active { background: #1F79AE; color: white; }
+    .node-pill { transition: all 0.3s; }
+    .fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); } 50% { box-shadow: 0 0 8px 2px rgba(16,185,129,0.3); } }
+    .pulse-online { animation: pulse-green 2s infinite; }
+    input, select, textarea { background: #1a1a1a; border: 1px solid #2D3436; color: #E5E7EB; }
+    input:focus, select:focus { outline: none; border-color: #1F79AE; }
+    table { border-collapse: collapse; width: 100%; }
+    th { background: #1a1a1a; color: #D4AF37; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; }
+    td, th { padding: 8px 12px; border-bottom: 1px solid #2D3436; text-align: left; font-size: 0.82rem; }
+    tr:hover td { background: #1e1e1e; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
+    .badge-success { background: rgba(16,185,129,0.15); color: #10B981; }
+    .badge-danger { background: rgba(239,68,68,0.15); color: #EF4444; }
+    .badge-warn { background: rgba(212,175,55,0.15); color: #D4AF37; }
+    .badge-info { background: rgba(31,121,174,0.15); color: #1F79AE; }
+    .btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; border: none; }
+    .btn-primary { background: #1F79AE; color: white; }
+    .btn-primary:hover { background: #1a6a9a; }
+    .btn-gold { background: #D4AF37; color: #121212; }
+    .btn-gold:hover { background: #c4a030; }
+    .btn-danger { background: #EF4444; color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-sm { padding: 4px 10px; font-size: 0.75rem; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: center; justify-content: center; }
+    .modal-box { background: #232223; border: 1px solid #2D3436; border-radius: 12px; padding: 24px; width: 420px; max-width: 95vw; }
+    .glow-card { transition: all 0.3s ease; }
+    .glow-card:hover { border-color: rgba(31,121,174,0.6); transform: translateY(-2px); box-shadow: 0 8px 24px -4px rgba(31,121,174,0.2); }
+    .hero-glow { background: radial-gradient(circle at 50% 20%, rgba(31,121,174,0.15) 0%, rgba(212,175,55,0.05) 40%, transparent 70%); }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- ==================== HEADER BAR ==================== -->
+  <header class="bg-card border-b border-border px-4 py-3 flex items-center justify-between flex-wrap gap-2">
+    <div class="flex items-center gap-3">
+      <h1 class="text-lg font-bold text-gold tracking-wide cursor-pointer hover:opacity-90 transition" onclick="switchTab('landing')">🎫 NusantaraTix <span class="text-primary text-sm font-normal">OLTP</span></h1>
+    </div>
+
+    <!-- Cluster Health Pills -->
+    <div class="flex items-center gap-2" id="clusterPills">
+      <div class="node-pill flex items-center gap-1 px-3 py-1 rounded-full bg-bg border border-border text-xs" id="node-26257">
+        <span class="w-2 h-2 rounded-full bg-gray-600" id="dot-26257"></span>
+        <span>JKT :26257</span>
+      </div>
+      <div class="node-pill flex items-center gap-1 px-3 py-1 rounded-full bg-bg border border-border text-xs" id="node-26258">
+        <span class="w-2 h-2 rounded-full bg-gray-600" id="dot-26258"></span>
+        <span>SBY :26258</span>
+      </div>
+      <div class="node-pill flex items-center gap-1 px-3 py-1 rounded-full bg-bg border border-border text-xs" id="node-26259">
+        <span class="w-2 h-2 rounded-full bg-gray-600" id="dot-26259"></span>
+        <span>BALI :26259</span>
+      </div>
+    </div>
+
+    <!-- Target Node Selector -->
+    <div class="flex items-center gap-2">
+      <label class="text-xs text-gray-400">Target Node:</label>
+      <select id="targetNodeSelect" class="px-2 py-1 rounded text-xs">
+        <option value="">Auto Failover</option>
+        <option value="26257">Jakarta :26257</option>
+        <option value="26258">Surabaya :26258</option>
+        <option value="26259">Bali :26259</option>
+      </select>
+    </div>
+
+    <!-- User & Role -->
+    <div class="flex items-center gap-2" id="userArea">
+      <span class="text-xs text-gray-400" id="currentUserDisplay">Not logged in</span>
+      <button class="btn btn-primary btn-sm" id="loginBtn" onclick="showLoginModal()">Login</button>
+    </div>
+  </header>
+
+  <!-- ==================== NAV TABS ==================== -->
+  <nav class="bg-card border-b border-border px-4 py-2 flex gap-2 overflow-x-auto" id="navTabs">
+    <!-- Tabs rendered by JS based on RBAC -->
+  </nav>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="p-4 max-w-[1400px] mx-auto" id="mainContent">
+    <div class="text-center py-20 text-gray-500">
+      <div class="inline-block animate-spin text-2xl mb-3">🎫</div>
+      <p class="text-sm text-gray-400">Memuat NusantaraTix Command-Center...</p>
+    </div>
+  </main>
+
+  <!-- ==================== LOGIN MODAL ==================== -->
+  <div class="modal-overlay hidden" id="loginModal">
+    <div class="modal-box">
+      <h2 class="text-lg font-bold text-gold mb-4">🔑 Login NusantaraTix</h2>
+      <div class="space-y-3">
+        <input type="text" id="loginUsername" placeholder="Username" class="w-full px-3 py-2 rounded">
+        <input type="password" id="loginPassword" placeholder="Password" class="w-full px-3 py-2 rounded">
+        <div id="loginError" class="text-crimson text-sm hidden"></div>
+        <div class="flex gap-2">
+          <button class="btn btn-primary flex-1" onclick="doLogin()">Login</button>
+          <button class="btn bg-gray-700 text-white flex-1" onclick="hideLoginModal()">Batal</button>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-gray-500">
+        <p class="font-semibold mb-1">Demo Accounts:</p>
+        <p>• admin_pusat / admin123 (ADMIN)</p>
+        <p>• operator_jkt / op123 (OPERATOR)</p>
+        <p>• analyst_uas / analyst123 (ANALYST)</p>
+        <p>• user_5 / pass123 (CUSTOMER)</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
