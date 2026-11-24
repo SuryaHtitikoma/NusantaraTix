@@ -1,0 +1,8 @@
+-- 1. Cek jumlah baris ketiga tabel perang (harus 1.000.000 masing-masing)
+SELECT
+    (SELECT count(*) FROM bookings) AS total_bookings,
+    (SELECT count(*) FROM booking_tickets) AS total_tickets,
+    (SELECT count(*) FROM payment_transactions) AS total_payments;
+
+-- 2. Cek distribusi Range ke Node 1, Node 2, dan Node 3
+SHOW RANGES FROM TABLE bookings;
